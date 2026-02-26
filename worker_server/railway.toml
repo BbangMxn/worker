@@ -1,0 +1,10 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "./Dockerfile"
+watchPatterns = ["**/*.go", "go.mod", "go.sum", "Dockerfile"]
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

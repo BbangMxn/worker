@@ -1,0 +1,373 @@
+# Workspace 단축키 매핑 (Superhuman 스타일)
+
+## 1. 메일 (Mail)
+
+### 탐색 (Navigation)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| J | 다음 대화 | Next conversation |
+| K | 이전 대화 | Previous conversation |
+| N | 다음 메시지 | Next message (스레드 내) |
+| P | 이전 메시지 | Previous message (스레드 내) |
+| Enter | 대화 열기 | Open conversation |
+| Esc | 뒤로가기 | Back / Clear selection |
+| Space | 아래로 스크롤 | Scroll down |
+| Shift+Space | 위로 스크롤 | Scroll up |
+| Cmd+↑ | 맨 위로 | Jump to top |
+| Cmd+↓ | 맨 아래로 | Jump to bottom |
+| O | 메시지 펼치기 | Expand message |
+| Shift+O | 모두 펼치기 | Expand all messages |
+
+### 폴더 이동 (Go to)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| G I | Inbox | 받은편지함 |
+| G S | Starred | 별표 메일 |
+| G T | Sent | 보낸메일함 |
+| G E | Done/Archive | 완료/보관함 |
+| G H | Reminders | 스누즈/리마인더 |
+| G D | Drafts | 임시보관함 |
+| G ! | Spam | 스팸함 |
+| G # | Trash | 휴지통 |
+| G A | All Mail | 전체 메일 |
+| G L | Label | 라벨로 이동 |
+
+### 액션 (Actions)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| E | 완료 (Archive) | Mark Done |
+| Shift+E | 완료 취소 | Mark Not Done |
+| H | 스누즈 | Remind Me / Snooze |
+| S | 별표 토글 | Star / Unstar |
+| U | 읽음 토글 | Mark Read / Unread |
+| # | 삭제 | Trash |
+| ! | 스팸 | Mark Spam |
+| Shift+M | 음소거 | Mute conversation |
+| Cmd+U | 구독 취소 | Unsubscribe |
+| Z | 실행 취소 | Undo last action |
+
+### 작성 (Compose)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| C | 새 메일 | Compose new |
+| Enter | 전체 답장 | Reply All |
+| R | 답장 | Reply |
+| F | 전달 | Forward |
+| Cmd+Enter | 전송 | Send |
+| Shift+Cmd+Enter | 전송 & 완료 | Send & Mark Done |
+| Shift+Cmd+, | 초안 삭제 | Discard Draft |
+
+### 작성 중 (While Composing)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| Shift+Cmd+O | To 필드 | Edit To |
+| Shift+Cmd+C | Cc 필드 | Edit Cc |
+| Shift+Cmd+B | Bcc 필드 | Edit Bcc |
+| Shift+Cmd+S | 제목 편집 | Edit Subject |
+| Shift+Cmd+M | 본문 편집 | Edit Message |
+| Shift+Cmd+A | 첨부파일 | Attach file |
+| Cmd+; | 스니펫 | Use Snippet |
+| Shift+Cmd+H | 스누즈 설정 | Remind Me |
+| Shift+Cmd+L | 예약 발송 | Send Later |
+
+### 라벨 (Labels)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| L | 라벨 추가/제거 | Add or Remove Label |
+| Y | 라벨 제거 | Remove Label |
+| [ | 라벨 제거 → 이전 | Remove Label, Previous |
+| ] | 라벨 제거 → 다음 | Remove Label, Next |
+| Shift+Y | 모든 라벨 제거 | Remove All Labels |
+| V | 이동 | Move to folder |
+
+### 선택 (Selection)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| X | 선택 토글 | Select conversation |
+| Shift+J | 아래로 선택 추가 | Add selection down |
+| Shift+K | 위로 선택 추가 | Add selection up |
+| Cmd+A | 여기서 전체 선택 | Select all from here |
+| Shift+Cmd+A | 전체 선택 | Select all |
+| Esc | 선택 해제 | Clear selection |
+
+### 필터 (Filters)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| Shift+U | 읽지 않음 필터 | Show Unread |
+| Shift+S | 별표 필터 | Show Starred |
+| Shift+I | 중요 필터 | Show Important |
+| Shift+R | 답장 없음 필터 | Show No Reply |
+
+### 서식 (Format)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| Cmd+B | 굵게 | Bold |
+| Cmd+I | 기울임 | Italics |
+| Cmd+U | 밑줄 | Underline |
+| Cmd+K | 링크 | Hyperlink |
+| Shift+Cmd+X | 취소선 | Strikethrough |
+| Shift+Cmd+7 | 숫자 목록 | Numbered list |
+| Shift+Cmd+8 | 글머리 기호 | Bullet list |
+| Shift+Cmd+9 | 인용 | Quote |
+| Tab | 들여쓰기 | Indent |
+| Shift+Tab | 내어쓰기 | Outdent |
+
+---
+
+## 2. 캘린더 (Calendar)
+
+### 탐색 (Navigation)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| G C | 캘린더 열기 | Go to Calendar |
+| 0 | 캘린더 토글 | Toggle Calendar sidebar |
+| - | 이전 날짜 | Previous day |
+| = / + | 다음 날짜 | Next day |
+| T | 오늘 | Go to Today |
+| J / → | 다음 | Next period |
+| K / ← | 이전 | Previous period |
+
+### 뷰 전환 (View)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| D | 일간 뷰 | Day view |
+| W | 주간 뷰 | Week view |
+| M | 월간 뷰 | Month view |
+| A | 일정 뷰 | Agenda view |
+
+### 액션 (Actions)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| B | 일정 생성 | Create Event |
+| C | 일정 생성 | Create Event (alt) |
+| Enter | 일정 열기 | Open Event |
+| E | 일정 편집 | Edit Event |
+| Delete / # | 일정 삭제 | Delete Event |
+| Cmd+S | 저장 | Save Event |
+
+---
+
+## 3. 연락처 (Contacts)
+
+### 탐색 (Navigation)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| G P | 연락처 열기 | Go to People/Contacts |
+| J | 다음 연락처 | Next contact |
+| K | 이전 연락처 | Previous contact |
+| / | 검색 | Search contacts |
+| Enter | 상세 보기 | Open contact |
+
+### 액션 (Actions)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| C | 새 연락처 | Create contact |
+| E | 편집 | Edit contact |
+| Delete | 삭제 | Delete contact |
+| M | 메일 작성 | Compose to contact |
+
+---
+
+## 4. 전역 (Global)
+
+### 커맨드 (Command)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| Cmd+K | 커맨드 팔레트 | Superhuman Command |
+| / | 검색 | Search |
+| ? | 단축키 도움말 | Show shortcuts |
+| Esc | 닫기/취소 | Close / Cancel |
+| Z | 실행 취소 | Undo |
+
+### 계정 & 창 (Account & Window)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| Ctrl+1~9 | 계정 전환 | Switch to Account 1-9 |
+| Cmd+N | 새 창 | New window |
+| Cmd+T | 새 탭 | New tab |
+| Cmd+W | 탭 닫기 | Close tab |
+| Shift+Cmd+] | 다음 탭 | Next tab |
+| Shift+Cmd+[ | 이전 탭 | Previous tab |
+| Cmd+1/2/3 | 탭 전환 | Switch to tab |
+
+### 줌 (Zoom)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| Cmd+= | 확대 | Increase font size |
+| Cmd+- | 축소 | Decrease font size |
+| Cmd+0 | 초기화 | Reset font size |
+
+### 링크 & 첨부 (Links)
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| Cmd+O | 링크/첨부 열기 | Open links & attachments |
+| Tab | 링크 순환 | Cycle through links |
+| Ctrl+/ | 페이지 링크 복사 | Copy page link |
+
+---
+
+## 5. AI Agent & Proposal
+
+### Proposal 관리
+| 단축키 | 동작 | 설명 |
+|--------|------|------|
+| Y | 승인 | Confirm proposal |
+| N | 거부 | Reject proposal |
+| Esc | 닫기 | Close proposal |
+
+---
+
+## 6. 프리셋 비교
+
+### Gmail vs Superhuman 주요 차이
+| 기능 | Gmail | Superhuman |
+|------|-------|------------|
+| 전체 답장 | A | Enter |
+| 답장 | R | R |
+| 아카이브 | E | E |
+| 스누즈 | (없음) | H |
+| 커맨드 | (없음) | Cmd+K |
+| 읽음 표시 | Shift+I | U |
+| 다음 메일 | J | J |
+| 폴더 이동 | G + 키 | G + 키 |
+
+---
+
+## 7. 데이터 구조
+
+### Supabase keyboard_shortcuts 테이블
+```sql
+CREATE TABLE keyboard_shortcuts (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id),
+    preset VARCHAR(50) DEFAULT 'superhuman',
+    enabled BOOLEAN DEFAULT true,
+    show_hints BOOLEAN DEFAULT true,
+    shortcuts JSONB DEFAULT '{}'
+);
+```
+
+### shortcuts JSONB 기본값 (Superhuman)
+```json
+{
+  "mail.next": "j",
+  "mail.prev": "k",
+  "mail.open": "Enter",
+  "mail.back": "Escape",
+  "mail.done": "e",
+  "mail.undone": "Shift+e",
+  "mail.snooze": "h",
+  "mail.star": "s",
+  "mail.read_toggle": "u",
+  "mail.trash": "#",
+  "mail.spam": "!",
+  "mail.mute": "Shift+m",
+  "mail.unsubscribe": "Cmd+u",
+  "mail.undo": "z",
+  "mail.compose": "c",
+  "mail.reply_all": "Enter",
+  "mail.reply": "r",
+  "mail.forward": "f",
+  "mail.send": "Cmd+Enter",
+  "mail.send_done": "Shift+Cmd+Enter",
+  "mail.label": "l",
+  "mail.label_remove": "y",
+  "mail.move": "v",
+  "mail.select": "x",
+  "mail.expand": "o",
+  "mail.expand_all": "Shift+o",
+  "nav.inbox": "g i",
+  "nav.starred": "g s",
+  "nav.sent": "g t",
+  "nav.done": "g e",
+  "nav.reminders": "g h",
+  "nav.drafts": "g d",
+  "nav.spam": "g !",
+  "nav.trash": "g #",
+  "nav.all": "g a",
+  "nav.label": "g l",
+  "nav.calendar": "g c",
+  "nav.contacts": "g p",
+  "filter.unread": "Shift+u",
+  "filter.starred": "Shift+s",
+  "filter.important": "Shift+i",
+  "filter.no_reply": "Shift+r",
+  "calendar.toggle": "0",
+  "calendar.prev": "-",
+  "calendar.next": "=",
+  "calendar.today": "t",
+  "calendar.day": "d",
+  "calendar.week": "w",
+  "calendar.month": "m",
+  "calendar.create": "b",
+  "global.command": "Cmd+k",
+  "global.search": "/",
+  "global.help": "?",
+  "global.escape": "Escape",
+  "proposal.confirm": "y",
+  "proposal.reject": "n",
+  "format.bold": "Cmd+b",
+  "format.italic": "Cmd+i",
+  "format.underline": "Cmd+u",
+  "format.link": "Cmd+k",
+  "format.strikethrough": "Shift+Cmd+x",
+  "format.numbered": "Shift+Cmd+7",
+  "format.bullet": "Shift+Cmd+8",
+  "format.quote": "Shift+Cmd+9"
+}
+```
+
+---
+
+## 8. 구현 우선순위
+
+### Phase 1 - Core (MVP)
+- [x] J/K 탐색
+- [x] Enter 열기, Esc 뒤로
+- [x] E 완료(아카이브)
+- [x] H 스누즈
+- [x] S 별표
+- [x] U 읽음 토글
+- [x] # 삭제
+- [x] C 작성, R 답장, F 전달
+- [x] Cmd+Enter 전송
+- [x] G+키 폴더 이동
+- [x] / 검색
+- [x] ? 도움말
+
+### Phase 2 - Enhanced
+- [ ] Cmd+K 커맨드 팔레트
+- [ ] L 라벨, V 이동
+- [ ] X 선택, Shift+J/K 다중 선택
+- [ ] 필터 (Shift+U/S/I/R)
+- [ ] O 펼치기
+
+### Phase 3 - Full
+- [ ] 캘린더 단축키
+- [ ] 서식 단축키
+- [ ] 계정 전환
+- [ ] 탭 관리
+- [ ] 스니펫 (Cmd+;)
+
+---
+
+## 9. API 엔드포인트
+
+```
+GET    /api/shortcuts           # 설정 조회
+PUT    /api/shortcuts           # 설정 업데이트
+POST   /api/shortcuts/reset     # 기본값 리셋
+GET    /api/shortcuts/presets   # 프리셋 목록
+GET    /api/shortcuts/conflicts # 충돌 검사
+```
+
+### 응답
+```json
+{
+  "preset": "superhuman",
+  "enabled": true,
+  "show_hints": true,
+  "shortcuts": { ... },
+  "conflicts": []
+}
+```
