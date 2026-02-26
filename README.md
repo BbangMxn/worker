@@ -6,6 +6,40 @@
 
 Bridgify는 Gmail/Outlook 이메일, Google Calendar, 연락처를 하나의 통합 인터페이스에서 관리하며, AI Agent가 자연어 명령을 이해하고 사용자를 대신해 작업을 수행하는 플랫폼입니다.
 
+### Retrospective (회고)
+
+이메일 자동 번역, AI 분류, 요약 등 핵심 LLM 기능은 실제로 동작하는 것을 확인했습니다. 하지만 프로젝트를 실제로 사용하면서 설계 단계에서 예상하지 못한 문제점과 과도한 엔지니어링이 드러났고, 수정이 필요한 부분을 정리합니다.
+
+**1. DB 구조의 단순화 — Neo4j 제거, 3-DB 구조로 전환**
+- Neo4j는 "LLM이 사용자를 깊이 이해해야 한다"는 판단으로 도입했으나, 실제 사용 패턴은 관계 탐색(read-heavy traversal)이 아니라 문체 데이터 쓰기(write-heavy)가 압도적. Graph DB의 강점인 multi-hop traversal을 활용할 시나리오가 거의 없음
+- PostgreSQL + MongoDB + Neo4j + Redis 4개 DB 운영은 인프라 복잡도 대비 효용이 낮음. 개인화 데이터를 MongoDB로 통합하여 PostgreSQL + MongoDB + Redis 3-DB 구조로 단순화 필요
+
+**2. 계층형 캐싱 시스템 도입 — RAM + SSD 3-tier 캐싱**
+- 현재 RAM L1 + Redis L2 2-tier 구조로 동작하지만, 데이터 특성에 따른 세밀한 캐시 전략이 부족
+- 이메일 데이터는 Hot/Warm/Cold 접근 패턴이 명확하므로, Hot Data → RAM, Warm Data → SSD, Cold Data → DB 형태의 3-tier 아키텍처로 전환 필요
+
+**3. LLM 전용 데이터 파이프라인 구축 — 프라이버시 파이프라인 분리**
+- LLM 번역·요약·분류는 동작하지만, 개인 이메일 데이터가 LLM에 그대로 전달되는 구조는 프라이버시 관점에서 불충분
+- 기존 이벤트 기반 파이프라인과 별도로 **전처리 → 익명화 → LLM 분석 → 결과 역매핑** 형태의 LLM 전용 파이프라인 설계 필요
+
+**4. RFC 분류 단계 축소 — LLM 직접 분류로 단순화**
+- LLM 비용 절감을 위해 40+ RFC 분류기로 구성된 7-Stage 파이프라인을 구축했고, 실제로 ~75% LLM 호출을 절감함
+- 하지만 LLM API 비용이 지속적으로 하락하는 추세에서, 40+개 분류기를 유지·관리하는 코드 복잡도 대비 비용 절감 효과가 감소 중. RFC 단계를 축소하고 LLM 직접 분류 비중을 높이는 방향으로 수정 필요
+
+**5. 핵심 플로우 완성 — Proposal 실행, Outlook 동기화**
+- AI Agent의 핵심 UX인 Proposal 확인/실행이 stub 상태. 사용자가 AI 제안을 승인해도 실제로 실행되지 않으므로 Redis 기반 ProposalStore 구현 및 `executeProposal()` 연결 필요
+- Outlook 동기화는 OAuth 연결만 가능하고 실제 이메일 동기화는 미구현. Microsoft Graph API 기반 동기화 구현 필요
+
+### Roadmap
+
+| Priority | Item | Status |
+|----------|------|--------|
+| 1 | **앱 프레임워크 마이그레이션** — 단일 프레임워크(Tauri, Electron 등)로의 데스크톱/모바일 앱 통합 | 미정 |
+| 2 | **DB 통합** — Neo4j 제거, PostgreSQL + MongoDB 2-DB 구조로 단순화 | 미정 |
+| 3 | **AI Agent 고도화** — OpenClaw 등 오픈소스 AI Agent 프레임워크 통합 검토 | 미정 |
+
+> 상세 로드맵 및 연구 주제는 [docs/ROADMAP.md](docs/ROADMAP.md) 참조
+
 ### Core Value
 
 | Feature | Description |
