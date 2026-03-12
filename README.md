@@ -1,658 +1,173 @@
-# Bridgify (Worker)
+# Worker
 
-> AI-powered work automation platform — Email, Calendar, Contacts를 지능적으로 통합 관리하는 Superhuman 스타일 워크스페이스
+> 이메일, 캘린더, 연락처를 하나의 워크스페이스로 묶고 AI Agent까지 연결해본 업무 자동화 플랫폼 실험
 
-## Overview
+[![Go](https://img.shields.io/badge/Go-1.24-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
+[![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?style=flat-square&logo=openai&logoColor=white)](https://openai.com/)
 
-Bridgify는 Gmail/Outlook 이메일, Google Calendar, 연락처를 하나의 통합 인터페이스에서 관리하며, AI Agent가 자연어 명령을 이해하고 사용자를 대신해 작업을 수행하는 플랫폼입니다.
+Worker는 Gmail/Outlook 이메일, Google Calendar, 연락처를 하나의 인터페이스에서 다루고, AI Agent가 자연어 명령을 이해해 사용자를 대신해 작업을 제안하거나 실행하는 워크스페이스를 목표로 만든 프로젝트입니다.  
+단순 메일 클라이언트가 아니라, `업무 도구를 AI와 함께 다시 설계해보는 실험`에 가깝습니다.
 
-### Retrospective (회고)
+## Portfolio Summary
 
-이메일 자동 번역, AI 분류, 요약 등 핵심 LLM 기능은 실제로 동작하는 것을 확인했습니다. 하지만 프로젝트를 실제로 사용하면서 설계 단계에서 예상하지 못한 문제점과 과도한 엔지니어링이 드러났고, 수정이 필요한 부분을 정리합니다.
+- 목표: 이메일, 캘린더, 연락처를 통합하고 AI Agent 기반 자동화까지 연결
+- 역할: 1인 개발
+- 담당: 제품 방향 설정, 프론트엔드, 백엔드, AI 파이프라인, 데이터 설계, 문서화
+- 현재 상태: 동작 검증 완료, 구조 재설계 진행 중
 
-**1. DB 구조의 단순화 — Neo4j 제거, 3-DB 구조로 전환**
-- Neo4j는 "LLM이 사용자를 깊이 이해해야 한다"는 판단으로 도입했으나, 실제 사용 패턴은 관계 탐색(read-heavy traversal)이 아니라 문체 데이터 쓰기(write-heavy)가 압도적. Graph DB의 강점인 multi-hop traversal을 활용할 시나리오가 거의 없음
-- PostgreSQL + MongoDB + Neo4j + Redis 4개 DB 운영은 인프라 복잡도 대비 효용이 낮음. 개인화 데이터를 MongoDB로 통합하여 PostgreSQL + MongoDB + Redis 3-DB 구조로 단순화 필요
+이 프로젝트는 `기능 구현`도 있지만, 그보다 `과도한 엔지니어링을 실제로 겪고 다시 단순화하려는 판단`까지 포함해 보여주는 프로젝트입니다.
 
-**2. 계층형 캐싱 시스템 도입 — RAM + SSD 3-tier 캐싱**
-- 현재 RAM L1 + Redis L2 2-tier 구조로 동작하지만, 데이터 특성에 따른 세밀한 캐시 전략이 부족
-- 이메일 데이터는 Hot/Warm/Cold 접근 패턴이 명확하므로, Hot Data → RAM, Warm Data → SSD, Cold Data → DB 형태의 3-tier 아키텍처로 전환 필요
+## Why This Project Exists
 
-**3. LLM 전용 데이터 파이프라인 구축 — 프라이버시 파이프라인 분리**
-- LLM 번역·요약·분류는 동작하지만, 개인 이메일 데이터가 LLM에 그대로 전달되는 구조는 프라이버시 관점에서 불충분
-- 기존 이벤트 기반 파이프라인과 별도로 **전처리 → 익명화 → LLM 분석 → 결과 역매핑** 형태의 LLM 전용 파이프라인 설계 필요
+업무 도구는 대개 이메일, 캘린더, 연락처가 서로 분리되어 있고, 사용자는 반복적인 분류와 정리를 계속 직접 해야 합니다.  
+그래서 이 프로젝트에서는 다음 질문을 직접 검증해보고 싶었습니다.
 
-**4. RFC 분류 단계 축소 — LLM 직접 분류로 단순화**
-- LLM 비용 절감을 위해 40+ RFC 분류기로 구성된 7-Stage 파이프라인을 구축했고, 실제로 ~75% LLM 호출을 절감함
-- 하지만 LLM API 비용이 지속적으로 하락하는 추세에서, 40+개 분류기를 유지·관리하는 코드 복잡도 대비 비용 절감 효과가 감소 중. RFC 단계를 축소하고 LLM 직접 분류 비중을 높이는 방향으로 수정 필요
+- AI Agent가 실제 업무 흐름 안에서 유용하게 동작할 수 있는가
+- 이메일 분류와 요약을 어디까지 자동화할 수 있는가
+- 개인화된 답장 생성이 실제로 가능한가
+- 단순 기능 추가가 아니라, 업무 워크스페이스 자체를 다시 설계할 수 있는가
 
-**5. 핵심 플로우 완성 — Proposal 실행, Outlook 동기화**
-- AI Agent의 핵심 UX인 Proposal 확인/실행이 stub 상태. 사용자가 AI 제안을 승인해도 실제로 실행되지 않으므로 Redis 기반 ProposalStore 구현 및 `executeProposal()` 연결 필요
-- Outlook 동기화는 OAuth 연결만 가능하고 실제 이메일 동기화는 미구현. Microsoft Graph API 기반 동기화 구현 필요
+즉 Worker는 `메일 클라이언트`를 만드는 프로젝트가 아니라, `AI 기반 업무 자동화 인터페이스`를 실험하는 프로젝트입니다.
 
-### Roadmap
+## What I Built
 
-| Priority | Item | Status |
-|----------|------|--------|
-| 1 | **앱 프레임워크 마이그레이션** — 단일 프레임워크(Tauri, Electron 등)로의 데스크톱/모바일 앱 통합 | 미정 |
-| 2 | **DB 통합** — Neo4j 제거, PostgreSQL + MongoDB 2-DB 구조로 단순화 | 미정 |
-| 3 | **AI Agent 고도화** — OpenClaw 등 오픈소스 AI Agent 프레임워크 통합 검토 | 미정 |
+### 1. Unified Workspace
 
-> 상세 로드맵 및 연구 주제는 [docs/ROADMAP.md](docs/ROADMAP.md) 참조
+- 이메일 뷰
+- 캘린더 뷰
+- 연락처 뷰
+- AI 채팅 / 명령 인터페이스
+- REST API + SSE 기반 실시간 연결
 
-### Core Value
+### 2. AI Agent Workflow
 
-| Feature | Description |
-|---------|-------------|
-| **AI Agent** | 자연어로 이메일 전송, 캘린더 생성, 검색 등 수행 — Proposal 기반 안전 실행 |
-| **7-Stage Classification** | RFC 헤더 → 도메인 → 패턴 → 사용자 규칙 → LLM 순서로 분류, LLM API 비용 ~75% 절감 |
-| **Real-time Sync** | Gmail Pub/Sub Push → historyId 델타 동기화 → SSE 브로드캐스트 |
-| **RAG Personalization** | 발신 이메일 분석으로 사용자 문체 학습, 개인화된 답장 생성 |
-| **Multi-Provider** | Gmail + Outlook 동시 지원, 통합 메일함 |
+- 자연어 명령 해석
+- 도구 선택 및 실행 계획 수립
+- Proposal 기반 안전 실행
+- 이메일 / 일정 / 연락처 작업 연동
 
----
+즉 AI가 바로 파괴적 작업을 실행하는 것이 아니라, 먼저 `Action Proposal`을 만들고 사용자의 확인을 받은 뒤 실행하는 구조를 택했습니다.
 
-## Tech Stack
+### 3. Email Classification Pipeline
 
-### Backend (`worker_server/`)
+- RFC 헤더 분석
+- 도메인 기반 분류
+- 제목 패턴 분류
+- 사용자 규칙 적용
+- Known domain DB
+- 최종 LLM fallback
 
-| Layer | Technology |
-|-------|-----------|
-| Language | **Go 1.24** |
-| HTTP Framework | Fiber v2 (fasthttp 기반 고성능) |
-| Architecture | Hexagonal (Ports & Adapters) |
-| Primary DB | PostgreSQL (Supabase, pgxpool + sqlx) |
-| Document DB | MongoDB (이메일 본문, gzip 압축, 30-day TTL) |
-| Graph DB | Neo4j (사용자 문체, 연락처 관계 그래프) |
-| Vector DB | pgvector (1536-dim OpenAI embeddings) |
-| Queue / Cache | Redis Streams + Redis Cache |
-| AI / LLM | OpenAI GPT-4o-mini (분류, 요약, 답장, Function Calling) |
-| Embeddings | OpenAI text-embedding-ada-002 |
-| Auth | JWT (Supabase JWKS), OAuth2 (Google, Microsoft) |
-| Deployment | Docker (multi-stage alpine) → Railway |
+이 파이프라인을 통해 이메일 분류에서 불필요한 LLM 호출을 줄이는 구조를 만들었습니다.
 
-### Frontend (`worker_client/`)
+### 4. Real-time Sync
 
-| Layer | Technology |
-|-------|-----------|
-| Language | **TypeScript** |
-| Framework | Next.js 14 (App Router) |
-| Styling | Tailwind CSS 3.4 |
-| Auth | Supabase SSR (@supabase/ssr) |
-| Animation | Framer Motion |
-| Icons | Lucide React |
-| Utilities | clsx + tailwind-merge |
+- Gmail Pub/Sub 기반 델타 동기화
+- historyId 기반 변경분 수집
+- SSE 브로드캐스트
+- 서버 재시작 이후 갭 감지 및 보정
 
----
+### 5. RAG Personalization
 
-## Architecture
+- 사용자가 보낸 이메일을 분석해 문체를 학습
+- 유사 이메일 검색
+- 개인화된 답장 생성
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Frontend (Next.js 14)                     │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
-│  │   Mail   │ │ Calendar │ │ Contacts │ │ AI Chat  │           │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘           │
-│       └─────────────┴─────────────┴─────────────┘               │
-│                          REST API + SSE                          │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-┌────────────────────────────▼────────────────────────────────────┐
-│                     Backend (Go / Fiber v2)                      │
-│                                                                  │
-│  ┌─── Adapter (In) ──────────────────────────────────────────┐  │
-│  │  HTTP Handlers (24 files)  │  Worker Processors (13 files) │  │
-│  └─────────────┬──────────────┴──────────────┬───────────────┘  │
-│                │                              │                  │
-│  ┌─── Core ───▼──────────────────────────────▼───────────────┐  │
-│  │  ┌──────────┐  ┌────────────────┐  ┌──────────────────┐   │  │
-│  │  │  Domain   │  │   Services     │  │   AI Agent       │   │  │
-│  │  │ (Entities)│  │ (Business      │  │ ┌─────────────┐  │   │  │
-│  │  │          │  │  Logic)        │  │ │ Orchestrator│  │   │  │
-│  │  │          │  │                │  │ │ LLM Client  │  │   │  │
-│  │  │          │  │ • Email        │  │ │ RAG System  │  │   │  │
-│  │  │          │  │ • Calendar     │  │ │ Tool Registry│ │   │  │
-│  │  │          │  │ • Classification│ │ │ Proposals   │  │   │  │
-│  │  │          │  │ • Search       │  │ └─────────────┘  │   │  │
-│  │  │          │  │ • Notification │  │                   │   │  │
-│  │  └──────────┘  └────────────────┘  └──────────────────┘   │  │
-│  │                     Ports (In/Out Interfaces)              │  │
-│  └────────────────────────────┬───────────────────────────────┘  │
-│                               │                                  │
-│  ┌─── Adapter (Out) ─────────▼───────────────────────────────┐  │
-│  │  PostgreSQL │ MongoDB │ Neo4j │ Redis │ Gmail/Outlook API  │  │
-│  └────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────┘
-```
+## Key Technical Decisions
 
-### Hexagonal Architecture
+- `Go + Fiber + Hexagonal Architecture`
+  - 실시간 동기화와 워커 처리, 다수의 외부 연동을 감당하기 위해 Go를 선택했고, 도메인/어댑터 분리를 위해 헥사고날 구조를 적용했습니다.
+- `Polyglot Persistence`
+  - PostgreSQL, MongoDB, Redis, Neo4j를 각 역할에 맞게 분리했지만, 실제 운영 관점에서는 과도한 복잡성이 생긴다는 점도 같이 확인했습니다.
+- `Proposal Safety Pattern`
+  - AI Agent가 이메일 전송이나 일정 생성 같은 작업을 곧바로 실행하지 않고, 사용자 확인을 거치도록 설계했습니다.
+- `7-Stage Classification`
+  - 모든 이메일을 곧바로 LLM에 던지지 않고, RFC 헤더와 규칙 기반 분류를 먼저 수행해 비용을 낮추는 방향을 선택했습니다.
+- `RAG Personalization`
+  - 단순 분류/요약을 넘어서, 사용자의 실제 발신 이메일을 바탕으로 답장 문체를 학습하는 구조를 실험했습니다.
 
-```
-Port (Interface)                    Adapter (Implementation)
-─────────────────                   ─────────────────────────
-EmailRepositoryPort      ────→     PostgreSQL Adapter
-EmailProviderPort        ────→     Gmail API / Outlook API Adapter
-EmailBodyRepositoryPort  ────→     MongoDB Adapter
-ClassificationPort       ────→     Neo4j Graph Adapter
-VectorStorePort          ────→     pgvector Adapter
-MessageQueuePort         ────→     Redis Stream Adapter
-```
+## Results and Current State
 
----
+현재까지 확인한 결과는 이렇습니다.
 
-## Directory Structure
+- 이메일 자동 번역, 분류, 요약: 동작 확인
+- 7-Stage Classification: LLM 호출 약 `75%` 절감
+- Gmail 실시간 동기화: 동작 확인
+- RAG 기반 개인화 답장: 구조 검증 완료
 
-```
+다만 이 프로젝트는 `성공한 기능`만 있는 게 아니라, 실제로 써보면서 발견한 구조 문제도 함께 남아 있습니다.
+
+- `Neo4j`
+  - 관계 탐색보다 문체 데이터 쓰기가 더 많아, Graph DB의 장점이 크지 않았습니다.
+- `4개 DB 운영`
+  - PostgreSQL + MongoDB + Neo4j + Redis는 개인 프로젝트 기준으로 복잡도가 높았습니다.
+- `Proposal execution`
+  - Proposal 생성은 되지만 실제 실행 연결은 일부 미완성입니다.
+- `Outlook sync`
+  - OAuth 연결은 되지만 실제 동기화는 아직 보완이 필요합니다.
+
+즉 Worker는 단순히 “기능이 많다”는 프로젝트가 아니라, `어떤 설계가 과했고 무엇을 줄여야 하는지`까지 확인한 프로젝트입니다.
+
+## Current Retrospective
+
+이 프로젝트에서 중요한 건 기능 목록보다 아래 판단들입니다.
+
+- Neo4j를 유지할 이유가 충분한가
+- 4개 DB 구조가 실제로 필요한가
+- RFC 분류 파이프라인 40+개를 계속 유지할 가치가 있는가
+- LLM 비용 절감보다 유지보수 복잡도가 더 큰 문제는 아닌가
+
+현재는 이런 문제를 바탕으로 더 단순한 구조로 다시 가져가는 방향을 검토하고 있습니다.
+
+- Neo4j 제거
+- PostgreSQL + MongoDB + Redis 중심 재정리
+- Proposal 실행 플로우 완성
+- Outlook 동기화 보완
+
+## Repository Layout
+
+```text
 worker/
-├── worker_client/                    # Frontend (Next.js 14)
-│   ├── src/
-│   │   ├── app/                      # Next.js App Router
-│   │   │   ├── (auth)/               # 로그인 / 회원가입
-│   │   │   ├── (workspace)/          # 메인 워크스페이스
-│   │   │   │   ├── mail/             # 이메일 뷰
-│   │   │   │   ├── calendar/         # 캘린더 뷰
-│   │   │   │   ├── contacts/         # 연락처 뷰
-│   │   │   │   ├── documents/        # 문서 뷰
-│   │   │   │   └── image/            # 이미지 뷰
-│   │   │   └── auth/callback/        # OAuth 콜백
-│   │   ├── entities/                 # 도메인 엔티티 (타입, 목업, UI)
-│   │   ├── lib/supabase/             # Supabase 클라이언트
-│   │   ├── shared/                   # 공통 컴포넌트, 훅, 유틸
-│   │   └── widgets/                  # 복합 UI 위젯 (FSD 패턴)
-│   │       ├── command-palette/      # Cmd+K 커맨드 팔레트
-│   │       ├── compose/              # 이메일 작성 모달
-│   │       ├── email-list/           # 이메일 목록
-│   │       ├── email-detail/         # 이메일 상세
-│   │       ├── calendar-view/        # 일/주 캘린더 뷰
-│   │       ├── sidebar/              # 네비게이션 사이드바
-│   │       └── split-view/           # 분할 뷰 레이아웃
-│   └── package.json
-│
-└── worker_server/                    # Backend (Go 1.24)
-    ├── main.go                       # 엔트리포인트 (--mode: api/worker/all)
-    ├── Dockerfile                    # Multi-stage Docker 빌드
-    ├── railway.toml                  # Railway 배포 설정
-    ├── config/                       # 환경변수 기반 설정
-    ├── core/                         # 비즈니스 로직 (Hexagonal Core)
-    │   ├── domain/                   # 도메인 엔티티 (20+ 파일)
-    │   ├── port/                     # 인터페이스
-    │   │   ├── in/                   # UseCase 인터페이스 (6)
-    │   │   └── out/                  # Repository 인터페이스 (18+)
-    │   ├── service/                  # 서비스 구현체
-    │   │   ├── ai/                   # AI 서비스 (개인화, 최적화)
-    │   │   ├── classification/       # 7-Stage 분류 파이프라인
-    │   │   │   └── rfc/              # 40+ RFC 기반 분류기
-    │   │   ├── email/                # 이메일 서비스, 동기화
-    │   │   ├── search/               # 검색 (7개 모듈)
-    │   │   └── notification/         # 알림 서비스, 웹훅
-    │   └── agent/                    # AI Agent 시스템
-    │       ├── worker_orchestrator.go # 중앙 AI 브레인
-    │       ├── llm/                  # OpenAI 클라이언트
-    │       ├── rag/                  # RAG 시스템 (스타일 분석, 벡터)
-    │       ├── tools/                # Function Calling 도구
-    │       └── session/              # 세션, Proposal 관리
-    ├── adapter/                      # 어댑터 (Hexagonal 외부)
-    │   ├── in/
-    │   │   ├── http/                 # HTTP 핸들러 (24 파일)
-    │   │   └── worker/               # 워커 프로세서 (13 파일)
-    │   └── out/
-    │       ├── persistence/          # PostgreSQL 어댑터 (30+)
-    │       ├── mongodb/              # MongoDB 어댑터
-    │       ├── graph/                # Neo4j 어댑터
-    │       ├── messaging/            # Redis Stream 어댑터
-    │       ├── provider/             # Gmail/Outlook API 어댑터
-    │       └── realtime/             # SSE 어댑터
-    ├── internal/
-    │   ├── bootstrap/                # DI 컨테이너, 앱 부트스트랩
-    │   └── stream/                   # Redis Stream 인프라
-    ├── infra/                        # 미들웨어, DB 초기화
-    ├── pkg/                          # 로거, Rate Limit, Metrics
-    └── migrations/                   # SQL 마이그레이션 (31개)
+├── worker_client/   # Next.js 14 frontend
+├── worker_server/   # Go backend
+└── docs/            # 로드맵 및 설계 문서
 ```
 
----
-
-## Key Features
-
-### 1. AI Agent & Orchestrator
-
-자연어 명령을 이해하고 실행하는 AI 에이전트 시스템입니다.
-
-```
-사용자: "오늘 오후 3시에 김민수님과 미팅 잡아줘"
-
-┌─────────────┐     ┌─────────────┐     ┌──────────────┐
-│ Intent       │     │ Tool        │     │ Proposal     │
-│ Detection   │────→│ Execution   │────→│ Generation   │
-│ (LLM)       │     │ (Calendar)  │     │ (확인 대기)   │
-└─────────────┘     └─────────────┘     └──────┬───────┘
-                                                │
-                                        사용자 확인/거부
-                                                │
-                                        ┌───────▼───────┐
-                                        │  실행 or 취소  │
-                                        └───────────────┘
-```
-
-**Proposal Safety Pattern**: 이메일 전송, 삭제, 캘린더 생성 등 파괴적 작업은 즉시 실행하지 않고, `ActionProposal`을 생성하여 사용자 확인 후 실행합니다 (10분 만료).
-
-**지원 도구:**
-- **Email**: 목록 조회, 읽기, 검색, 전송, 답장, 전달, 삭제, 보관, 별표, 번역, 요약
-- **Calendar**: 일정 조회, 생성, 수정, 삭제, 빈 시간 검색
-- **Contact**: 연락처 조회, 생성, 수정
-
-### 2. Email Classification Pipeline
-
-LLM API 비용을 ~75% 절감하는 7-Stage 분류 파이프라인입니다.
-
-```
-수신 이메일
-    │
-    ├─ Stage 0: RFC Header 분석 ──────── ~50-60% 해결
-    │   (List-Unsubscribe, Precedence, Auto-Submitted,
-    │    ESP 감지: Mailchimp, SendGrid, SES 등)
-    │
-    ├─ Stage 1: Domain Score ─────────── ~10% 추가 해결
-    │   (github.com, stripe.com 등 알려진 서비스 도메인)
-    │
-    ├─ Stage 2: Subject Pattern ──────── ~5% 추가 해결
-    │   (CI/CD 패턴, 금융 알림, 배송 추적 등)
-    │
-    ├─ Stage 3: User Rules ───────────── ~10% 추가 해결
-    │   (사용자 정의 중요 도메인, 키워드, 무시 발신자)
-    │
-    ├─ Stage 4: Known Domain DB ──────── ~5% 추가 해결
-    │   (SenderProfile, KnownDomain 데이터베이스)
-    │
-    ├─ Stage 5: Cache (예약) ─────────── (향후 구현)
-    │
-    └─ Stage 6: LLM Fallback ─────────── ~20-30% (나머지)
-        (OpenAI GPT-4o-mini, 자연어 규칙 포함)
-```
-
-**RFC 분류기 (40+):**
-GitHub, GitLab, Jira, Slack, Notion, Linear, PagerDuty, Datadog, Sentry, Stripe, AWS, Google Cloud, Vercel, Netlify 등 개발자 서비스별 전용 분류기
-
-**분류 카테고리:**
-
-| Category | SubCategories |
-|----------|---------------|
-| `work` | meeting, project, client, team, hr |
-| `personal` | family, friend, health, finance |
-| `newsletter` | tech, business, lifestyle |
-| `marketing` | promotion, sale, product_launch |
-| `notification` | social, system, security, shipping |
-| `developer` | ci_cd, pr_review, issue, deploy, alert |
-| `finance` | invoice, payment, statement, tax |
-| `travel` | booking, itinerary, loyalty |
-| `other` | - |
-
-### 3. Real-time Email Sync
-
-Gmail Pub/Sub 기반 실시간 동기화 시스템입니다.
-
-```
-Gmail 서버                    Worker 서버                     클라이언트
-    │                             │                              │
-    │   Pub/Sub Push 알림          │                              │
-    │──────────────────────────→  │                              │
-    │                   Webhook 수신 → Delta Sync 시작            │
-    │                             │                              │
-    │   history.list 요청          │                              │
-    │←────────────────────────── │                              │
-    │   변경된 메시지 목록          │                              │
-    │──────────────────────────→  │                              │
-    │                    DB 업데이트 + AI 분류 (비동기)            │
-    │                             │       SSE Event              │
-    │                             │──────────────────────────→   │
-    │                             │   {type: "email.new"}        │
-    │                             │                        UI 업데이트
-```
-
-- Gmail Watch 7일 만료 전 자동 재등록 스케줄러 내장
-- 동기화 실패 시 자동 재시도 스케줄러
-- 서버 재시작 시 동기화 갭 감지 및 보정
-
-### 4. RAG Personalization System
-
-사용자의 발신 이메일을 분석하여 문체를 학습하고, 개인화된 답장을 생성합니다.
-
-```
-발신 이메일 → Style Analyzer → Neo4j (Writing Style)
-                                    │
-                         ┌──────────┼──────────┐
-                         │          │          │
-                   Formality   Sentence    Tone
-                   Score       Length Avg   Preference
-                         │          │          │
-                   Emoji Freq  Greetings  Closings
-
-답장 생성 시:
-    pgvector (유사 이메일 검색)
-         +
-    Neo4j (수신자 관계, 문체 패턴)
-         +
-    LLM (Context + Style → Personalized Reply)
-```
-
-### 5. Worker Pool & Job Queue
-
-Redis Streams 기반 비동기 작업 처리 시스템입니다.
-
-| Job Type | Description |
-|----------|-------------|
-| `email.initial_sync` | 최초 이메일 전체 동기화 |
-| `email.delta_sync` | historyId 기반 변경분 동기화 |
-| `email.send` | 이메일 전송 |
-| `email.modify` | 라벨 변경, 읽음 처리 등 |
-| `email.watch_setup` | Gmail Watch 등록 |
-| `ai.classify` | AI 이메일 분류 |
-| `ai.summarize` | AI 이메일 요약 |
-| `rag.index` | 이메일 임베딩 및 인덱싱 |
-| `calendar.sync` | 캘린더 동기화 |
-
-- Worker Pool: 최소 2개 → 최대 20개 고루틴, 부하에 따라 자동 스케일링
-- Consumer Group: at-least-once 메시지 처리 보장
-- Pending 자동 재처리: 실패 메시지 자동 재시도 (최대 3회)
-
----
-
-## Database Schema
-
-### PostgreSQL (Primary — 31 migrations)
-
-| Table | Description |
-|-------|-------------|
-| `users` | 사용자 계정 (Supabase Auth 연동) |
-| `oauth_connections` | OAuth 연결 정보 (Google, Microsoft) |
-| `emails` | 이메일 메타데이터 + AI 분류 결과 |
-| `labels` | 이메일 라벨 (Gmail/Outlook 매핑) |
-| `calendar_events` | 캘린더 이벤트 |
-| `contacts` | 연락처 |
-| `settings` | 사용자 설정 |
-| `classification_rules` | 사용자 정의 분류 규칙 |
-| `email_embeddings` | pgvector 이메일 임베딩 (1536-dim) |
-| `sender_profiles` | 발신자 프로필 |
-| `sync_states` | Gmail historyId 동기화 상태 |
-| `notifications` | 푸시 알림 |
-| `email_attachments` | 첨부파일 메타데이터 |
-| `email_templates` | 이메일 템플릿 |
-| `todos` | 할 일 목록 |
-
-**Priority Score (Eisenhower Matrix 기반):**
-
-| Score | Level | Description |
-|-------|-------|-------------|
-| 0.80 ~ 1.00 | Urgent | 즉각 조치 필요 |
-| 0.60 ~ 0.79 | High | 중요, 빠른 대응 필요 |
-| 0.40 ~ 0.59 | Normal | 관련성 있음 |
-| 0.20 ~ 0.39 | Low | 지연 가능 |
-| 0.00 ~ 0.19 | Lowest | 배경 노이즈 |
-
-### MongoDB (Document Store)
-
-| Collection | Description |
-|-----------|-------------|
-| `email_bodies` | 이메일 본문 (text/html), gzip 압축, 30-day TTL |
-
-### Neo4j (Graph DB)
-
-```
-(:User)
-  ├──[:HAS_WRITING_STYLE]──→(:WritingStyle)
-  ├──[:HAS_TONE_PREF]──→(:TonePreference)
-  ├──[:HAS_PATTERN]──→(:CommunicationPattern)
-  ├──[:USES_PHRASE]──→(:Phrase)
-  └──[:COMMUNICATES_WITH]──→(:Contact)
-```
-
-### Redis
-
-| Key Pattern | Description |
-|------------|-------------|
-| `stream:jobs` | 작업 큐 (Redis Stream) |
-| `cache:emails:{userId}:*` | L2 이메일 목록 캐시 (1분 TTL) |
-| `cache:session:{sessionId}` | AI 세션 캐시 (24시간 TTL) |
-
----
-
-## API Reference
-
-모든 인증 엔드포인트는 `Authorization: Bearer <supabase_jwt_token>` 헤더가 필요합니다.
-
-### OAuth
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/oauth/connect/:provider` | OAuth 연결 시작 |
-| `GET` | `/api/v1/oauth/:provider/callback` | OAuth 콜백 처리 |
-| `DELETE` | `/api/v1/oauth/disconnect/:provider` | OAuth 연결 해제 |
-| `GET` | `/api/v1/oauth/connections` | 연결된 계정 목록 |
-
-### Email
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/mail` | 이메일 목록 (필터 지원) |
-| `GET` | `/api/v1/mail/unified` | 통합 메일함 (커서 페이지네이션) |
-| `GET` | `/api/v1/mail/search` | Gmail API 직접 검색 |
-| `GET` | `/api/v1/mail/:id` | 이메일 상세 조회 |
-| `GET` | `/api/v1/mail/:id/body` | 이메일 본문 (MongoDB) |
-| `POST` | `/api/v1/mail` | 이메일 전송 |
-| `POST` | `/api/v1/mail/:id/reply` | 답장 |
-| `POST` | `/api/v1/mail/:id/forward` | 전달 |
-| `POST` | `/api/v1/mail/read` | 읽음 처리 (batch) |
-| `POST` | `/api/v1/mail/archive` | 보관 (batch) |
-| `POST` | `/api/v1/mail/trash` | 휴지통 (batch) |
-| `POST` | `/api/v1/mail/delete` | 영구 삭제 (batch) |
-| `POST` | `/api/v1/mail/move` | 폴더 이동 (batch) |
-| `POST` | `/api/v1/mail/snooze` | 다시 알림 |
-| `POST` | `/api/v1/mail/sync` | 수동 동기화 트리거 |
-
-### AI Agent
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/v1/ai/chat` | AI 대화 (동기) |
-| `GET` | `/api/v1/ai/chat/stream` | AI 대화 (SSE 스트리밍) |
-| `POST` | `/api/v1/ai/classify/:id` | 이메일 분류 |
-| `POST` | `/api/v1/ai/classify/batch` | 배치 분류 |
-| `POST` | `/api/v1/ai/summarize/:id` | 이메일 요약 |
-| `POST` | `/api/v1/ai/reply/:id` | AI 답장 생성 |
-| `POST` | `/api/v1/ai/autocomplete` | 작성 자동완성 |
-| `GET` | `/api/v1/ai/proposals` | 대기 중 Proposal 목록 |
-| `POST` | `/api/v1/ai/proposals/:id/confirm` | Proposal 승인 실행 |
-| `POST` | `/api/v1/ai/proposals/:id/reject` | Proposal 거부 |
-
-### Calendar
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/calendar/events` | 이벤트 목록 |
-| `POST` | `/api/v1/calendar/events` | 이벤트 생성 |
-| `PUT` | `/api/v1/calendar/events/:id` | 이벤트 수정 |
-| `DELETE` | `/api/v1/calendar/events/:id` | 이벤트 삭제 |
-
-### Real-time & Webhooks
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/sse/events` | SSE 이벤트 스트림 |
-| `POST` | `/webhook/gmail` | Gmail Pub/Sub 수신 (no auth) |
-| `POST` | `/webhook/outlook` | Outlook 수신 (no auth) |
-| `GET` | `/health` | 헬스체크 |
-
-**SSE Event Types:** `email.new`, `email.updated`, `sync.progress`, `sync.complete`
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Go 1.24+
-- Node.js 18+ / npm
-- PostgreSQL 15+ (with pgvector extension)
-- MongoDB 7+
-- Redis 7+
-- Neo4j 5+
-- Google Cloud Console 프로젝트 (Gmail API, Calendar API, Pub/Sub)
-- OpenAI API Key
-
-### Backend Setup
-
-```bash
-cd worker_server
-
-# 환경변수 설정
-cp .env.example .env
-# .env 파일을 편집하여 DB URL, API 키 등 입력
-
-# 의존성 설치
-go mod download
-
-# 마이그레이션 실행
-# migrations/ 폴더의 SQL 파일을 순서대로 PostgreSQL에 실행
-
-# 서버 시작
-go run . --mode=all       # API + Worker 모두 실행
-go run . --mode=api       # API 서버만
-go run . --mode=worker    # Worker만
-```
-
-### Frontend Setup
-
-```bash
-cd worker_client
-
-npm install
-
-# .env.local 파일 편집 (NEXT_PUBLIC_API_URL, Supabase 키)
-
-npm run dev
-```
-
-### Docker
-
-```bash
-cd worker_server
-docker build -t bridgify-server .
-docker run -p 8080:8080 --env-file .env bridgify-server
-```
-
----
-
-## Environment Variables
-
-```bash
-# Server
-PORT=8080
-ENV=development
-
-# PostgreSQL (Supabase)
-DATABASE_URL=postgresql://...
-DIRECT_URL=postgresql://...
-
-# MongoDB
-MONGODB_URL=mongodb://...
-MONGODB_DATABASE=bridgify
-
-# Redis
-REDIS_URL=redis://...
-
-# Neo4j
-NEO4J_URL=bolt://...
-NEO4J_USERNAME=neo4j
-NEO4J_PASSWORD=...
-
-# Supabase Auth
-SUPABASE_URL=https://...
-SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
-SUPABASE_JWT_SECRET=...
-
-# OpenAI
-OPENAI_API_KEY=sk-...
-LLM_MODEL=gpt-4o-mini
-
-# Google OAuth
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URL=http://localhost:8080/api/v1/oauth/google/callback
-GOOGLE_PROJECT_ID=...
-
-# Microsoft OAuth
-MICROSOFT_CLIENT_ID=...
-MICROSOFT_CLIENT_SECRET=...
-MICROSOFT_REDIRECT_URL=http://localhost:8080/api/v1/oauth/microsoft/callback
-```
-
-전체 환경변수 목록: `.env.example` 참조
-
----
-
-## Design Decisions
-
-### Why Hexagonal Architecture?
-
-- **테스트 용이성**: Port 인터페이스를 통해 모든 외부 의존성을 Mock으로 교체 가능
-- **기술 교체 유연성**: PostgreSQL → CockroachDB 전환 시 Adapter만 교체
-- **관심사 분리**: Domain은 외부 기술에 대한 의존성 zero
-
-### Why 7-Stage Classification?
-
-- **비용 효율**: 이메일의 ~70-80%는 RFC 헤더와 도메인 분석만으로 분류 가능
-- **속도**: LLM 호출 없이 즉시 분류 → 사용자 경험 향상
-- **정확도**: 각 단계가 특화된 도메인 지식 활용
-
-### Why MongoDB for Email Bodies?
-
-- **대용량 텍스트**: HTML 이메일 본문은 수백 KB에 달할 수 있음
-- **TTL**: 30일 자동 만료로 스토리지 비용 관리
-- **gzip 압축**: 저장 공간 50-70% 절약
-
-### Why Neo4j for Personalization?
-
-- **관계 중심 데이터**: "누구와 어떤 톤으로 소통하는가"는 그래프 모델에 최적
-- **Traversal 성능**: 2-3 hop 관계 탐색이 RDBMS 대비 수백 배 빠름
-- **EMA 기반 트렌드**: 시간에 따른 관계 변화를 Exponential Moving Average로 추적
-
-### Why Redis Streams?
-
-- **At-least-once 보장**: Consumer Group으로 메시지 유실 방지
-- **자동 스케일링**: 여러 Worker가 동일 Stream을 분산 소비
-- **Pending 재처리**: 처리 실패 메시지 자동 재시도
-
----
-
-## Deployment
-
-### Railway (Production)
-
-```toml
-[build]
-builder = "dockerfile"
-dockerfilePath = "worker_server/Dockerfile"
-
-[deploy]
-healthcheckPath = "/health"
-restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 5
-```
-
-### Infrastructure
-
-```
-Railway (Go Server) ──→ Supabase (PostgreSQL + Auth)
-        │
-        ├──→ MongoDB Atlas
-        ├──→ Redis (Upstash / Railway)
-        ├──→ Neo4j (Aura / Self-hosted)
-        └──→ Google Cloud (Pub/Sub, Gmail API)
-```
-
----
-
-## License
-
-This project is proprietary software. All rights reserved.
+## Stack
+
+### Backend
+
+- Go 1.24
+- Fiber v2
+- Hexagonal Architecture
+- PostgreSQL
+- MongoDB
+- Redis Streams / Cache
+- Neo4j
+- OpenAI GPT-4o-mini
+- pgvector
+
+### Frontend
+
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- Supabase SSR
+- Framer Motion
+
+## What This Project Shows
+
+- AI Agent 제품을 실제로 설계하고 구현한 경험
+- 복잡한 백엔드 구조를 헥사고날로 정리한 경험
+- 실시간 동기화, 워커 큐, 외부 API 연동을 묶은 경험
+- RAG와 개인화 답장 생성까지 연결한 경험
+- 구현 후 과도한 설계를 스스로 비판하고 재설계 방향을 잡는 능력
+
+## Related Docs
+
+- [Roadmap](./docs/ROADMAP.md)
+- `worker_server/` 내부 설계 문서
+- `worker_client/` 워크스페이스 UI 구현
